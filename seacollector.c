@@ -3,13 +3,16 @@
 
 #define STACK_MAX 256
 
+//misc code
+
 typedef enum {
-    OBG_INT,
+    OBJ_INT,
     OBJ_PAIR
-} ObjectiveType;
+} ObjectType;
 
 typedef struct sObject {
-    ObjectiveType type;
+    ObjectType type;
+    unsigned char marked;
 
     union {
         /* OBJ_INT */
@@ -23,28 +26,47 @@ typedef struct sObject {
     };
 } Object;
 
+//VM modeling
+
 typedef struct {
     Object* stack[STACK_MAX];
     int stackSize;
 }VM;
 
-VM* newVM() {
+VM* newVM() {                                             //VM init
     VM* vm = malloc(sizeof(VM));
     vm->stackSize = 0;
     return vm;
 }
 
-void push(VM* vm, Object* value) {
+void push(VM* vm, Object* value) {                        //Stack manipulation
     assert(vm->stackSize < STACK_MAX, "Stack overflow!");
     vm->stack[vm->stackSize++] = value;
 }
 
-Object* pop(VM* vm) {
+Object* pop(VM* vm) {                                     //Idem
     assert(vm->stackSize > 0, "Stack underflow!");
     return vm->stack[--vm->stackSize];
 }
 
-Object* newObject(VM* vm, ObjectType type) {
+void mark(Object* object) {
+    if (object->marked) return;
+    object->marked = 1;
+
+    if (object->type == OBJ_PAIR) {
+        mark(object->head);
+        mark(object->tail);
+    }
+}
+
+void markAll(VM* vm)
+{
+    for (int i = 0; i < vm->stackSize; i++) {
+        mark(vm->stack[i]);
+    }
+}
+
+Object* newObject(VM* vm, ObjectType type) {             //HF to stuff variables, allocate mem and set type tag
   Object* object = malloc(sizeof(Object));
   object->type = type;
   return object;
